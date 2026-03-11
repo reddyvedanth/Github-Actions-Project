@@ -80,7 +80,7 @@ jobs:
     - name: SonarQube Scan
       uses: kitabisa/sonarqube-action@v1.2.0
       with:
-        host: ${{ secrets.SONARQUBE_HOST }}
+        host: ${{ vars.SONARQUBE_HOST }}
         login: ${{ secrets.SONARQUBE_TOKEN }}   
         
     - name: SonarQube Quality Gate check
@@ -90,7 +90,7 @@ jobs:
         pollingTimeoutSec: 600
       env:
          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-         SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }} #OPTIONAL
+         SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }} #OPTIONAL
      
 
       
