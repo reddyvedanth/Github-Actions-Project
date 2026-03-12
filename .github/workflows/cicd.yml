@@ -87,8 +87,8 @@ jobs:
       - name: SonarQube Scan
         uses: kitabisa/sonarqube-action@v1.2.0
         with:
-          host: ${{ vars.SONARQUBE_HOST_URL }}
-          login: ${{ secrets.SONARQUBE_TOKEN }}
+          host: ${{ vars.SONAR_HOST_URL }}
+          login: ${{ secrets.SONAR_TOKEN }}
 
       - name: SonarQube Quality Gate check
         id: sonarqube-quality-gate-check
