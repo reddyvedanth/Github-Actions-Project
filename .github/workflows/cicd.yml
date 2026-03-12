@@ -82,6 +82,7 @@ jobs:
          -Dsonar.projectKey=Github-Actions-Project \
          -Dsonar.host.url=${{ vars.SONAR_HOST_URL }} \
          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+         -Dsonar.qualitygate.wait=true
 
     - name: SonarQube Quality Gate check
       id: sonarqube-quality-gate-check
