@@ -1,99 +1,100 @@
-name: CICD Pipeline 
+name: CICD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   compile:
     runs-on: self-hosted
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: maven
-    - name: Build with Maven
-      run: mvn compile
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn compile
 
   security-checks:
     runs-on: self-hosted
     needs: compile
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Trvi installation
-      run: | 
-        sudo apt-get install -y wget apt-transport-https gnupg lsb-release
-        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-        echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
-        sudo apt-get update -y
-        sudo apt-get install -y trivy
+      - uses: actions/checkout@v4
 
-    - name: trvi Fs scan
-      run: trivy fs --format table -o fs-report.json .
+      - name: Trivy installation
+        run: |
+          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update -y
+          sudo apt-get install -y trivy
 
-    - name: Git leaks scan install
-      run: sudo apt install gitleaks -y
-      
-    - name: git leaks code scan
-      run: gitleaks detect source . -r gitleaks-report.json -f json
+      - name: Trivy FS scan
+        run: trivy fs --format table -o fs-report.json .
+
+      - name: GitLeaks install
+        run: sudo apt install gitleaks -y
+
+      - name: GitLeaks code scan
+        run: gitleaks detect source . -r gitleaks-report.json -f json
 
   test:
     runs-on: self-hosted
     needs: security-checks
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: maven
-    - name: Run Unit Test
-      run: mvn test
-      
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run Unit Test
+        run: mvn test
+
   build_project_and_sonar_scan:
-   runs-on: self-hosted
-   needs: test
-    
-   steps:
-    - uses: actions/checkout@v4
-      with:
-       fetch-depth: 0
+    runs-on: self-hosted
+    needs: test
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-       java-version: '17'
-       distribution: 'temurin'
-       cache: maven
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Build Project
-      run: mvn package
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
 
-    - name: SonarQube Scan
-      run: |
-       mvn clean verify sonar:sonar \
-         -Dsonar.projectKey=Github-Actions-Project \
-         -Dsonar.host.url=${{ vars.SONAR_HOST_URL }} \
-         -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
-         -Dsonar.qualitygate.wait=true
+      - name: Build Project
+        run: mvn package
 
-    - name: SonarQube Quality Gate check
-      id: sonarqube-quality-gate-check
-      uses: sonarsource/sonarqube-quality-gate-action@master
-      with:
-        pollingTimeoutSec: 600
-      env:
-         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-         SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
-      
-      
-  
-   
-    
+      - name: Checking out
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarQube Scan
+        uses: kitabisa/sonarqube-action@v1.2.0
+        with:
+          host: ${{ vars.SONARQUBE_HOST }}
+          login: ${{ secrets.SONARQUBE_TOKEN }}
+
+      - name: SonarQube Quality Gate check
+        id: sonarqube-quality-gate-check
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        with:
+          pollingTimeoutSec: 600
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
